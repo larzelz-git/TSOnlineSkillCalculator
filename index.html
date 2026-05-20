@@ -1,0 +1,38 @@
+﻿<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TS Online Skill Tree Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="layout">
+    <section class="left panel">
+      <header class="topbar">
+        <h1>TS Skill Tree Planner</h1>
+        <div class="controls">
+          <label>ธาตุตัวละคร <select id="mainElementSelect"></select></label>
+          <button id="resetBtn" type="button">Clear</button>
+        </div>
+      </header>
+      <nav id="tabBar" class="tab-bar"></nav>
+      <div id="treeView" class="tree-view"></div>
+    </section>
+
+    <aside class="right panel">
+      <h2>สรุปการอัปสกิล</h2>
+      <p id="summary"></p>
+      <ul id="selectedList" class="selected-list"></ul>
+      <p class="note">คลิกโหนดเพื่อ +1 เลเวล, กดคลิกขวาเพื่อลดเลเวล</p>
+      <p class="note">ระบบเช็กเงื่อนไข AND/OR จากข้อมูลอัตโนมัติ</p>
+    </aside>
+  </main>
+
+  <script src="data/skills-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
