@@ -214,6 +214,29 @@ button { cursor: pointer; }
   margin-top: 4px;
 }
 
+.skill-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.1s ease, transform 0.1s ease;
+  background: rgba(5, 11, 22, 0.95);
+  color: #ecf2ff;
+  border: 1px solid rgba(169, 187, 255, 0.45);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  max-width: min(320px, 70vw);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.skill-tooltip.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (max-width: 1080px) {
   .layout { grid-template-columns: 1fr; }
   .tree-wrap { height: 430px; }

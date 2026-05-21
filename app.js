@@ -193,6 +193,36 @@ const state = {
   currentByGroup: new Map()
 };
 
+let skillTooltipEl = null;
+
+function ensureSkillTooltip() {
+  if (skillTooltipEl) return skillTooltipEl;
+  const el = document.createElement("div");
+  el.className = "skill-tooltip";
+  el.setAttribute("role", "tooltip");
+  document.body.append(el);
+  skillTooltipEl = el;
+  return el;
+}
+
+function showSkillTooltip(text, x, y) {
+  const el = ensureSkillTooltip();
+  el.textContent = text;
+  el.classList.add("show");
+  moveSkillTooltip(x, y);
+}
+
+function moveSkillTooltip(x, y) {
+  const el = ensureSkillTooltip();
+  el.style.left = `${x + 12}px`;
+  el.style.top = `${y + 14}px`;
+}
+
+function hideSkillTooltip() {
+  if (!skillTooltipEl) return;
+  skillTooltipEl.classList.remove("show");
+}
+
 function normName(name) {
   return (name || "")
     .replace(/^วิชา/, "")
@@ -662,10 +692,12 @@ function makeNode(skill, pos) {
   const lv = getLevel(skill.id);
   const blocked = ELEMENTS.includes(skill.element) && isBlockedByElementRule(skill.element);
   const unlocked = canLearn(skill);
+  const initialCost = costAtLevel(skill, 1);
 
   const node = document.createElement("button");
   node.type = "button";
   node.className = `node ${lv > 0 ? "active" : ""} ${unlocked ? "" : "locked"} ${blocked ? "blocked" : ""}`;
+  node.removeAttribute("title");
   if (skill.tier === "0") node.classList.add("evo0");
   if (skill.tier === "1") node.classList.add("evo1");
   if (skill.tier === "2") node.classList.add("evo2");
@@ -709,6 +741,16 @@ function makeNode(skill, pos) {
     state.levels.set(skill.id, getLevel(skill.id) - 1);
     refresh();
   });
+
+  const tooltipText = `${skill.name} | ${initialCost}`;
+  node.addEventListener("mouseenter", (ev) => {
+    showSkillTooltip(tooltipText, ev.clientX, ev.clientY);
+  });
+  node.addEventListener("mousemove", (ev) => {
+    moveSkillTooltip(ev.clientX, ev.clientY);
+  });
+  node.addEventListener("mouseleave", hideSkillTooltip);
+  node.addEventListener("blur", hideSkillTooltip);
 
   return node;
 }
