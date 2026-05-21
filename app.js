@@ -929,7 +929,6 @@ function renderSummaryTab() {
     level > 1
     || skill.children.length === 0
     || skill.id === "13008"
-    || skill.name.includes("แบ่งร่าง")
   );
   const lines = merged.length
     ? merged.map(({ skill, level }) => {
@@ -963,6 +962,7 @@ function refresh() {
   renderTabs();
   renderTreeView();
   renderSummary();
+  syncBuildQueryToUrl();
 }
 
 function resetAll() {
@@ -992,6 +992,9 @@ async function init() {
     return;
   }
 
+  buildTrees();
+  applyBuildFromUrl();
+  mainElementSelect.value = state.mainElement;
   refresh();
 
   mainElementSelect.addEventListener("change", () => {
@@ -1004,3 +1007,85 @@ async function init() {
 init().catch((err) => {
   summary.textContent = `โหลดข้อมูลไม่สำเร็จ: ${err.message}`;
 });
+
+function parseBuildParam(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const [id, lvText] = part.split(":");
+      const level = Number(lvText);
+      return { id: String(id || "").trim(), level: Number.isFinite(level) ? level : 0 };
+    })
+    .filter(({ id, level }) => id && level > 0);
+}
+
+function applyBuildFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const main = params.get("main");
+  if (main && ELEMENTS.includes(main)) state.mainElement = main;
+  const items = parseBuildParam(params.get("build"));
+  if (!items.length) return;
+  if (!main) {
+    const guessed = guessMainElementFromBuild(items);
+    if (guessed) state.mainElement = guessed;
+  }
+  state.levels.clear();
+  for (const { id, level } of items) {
+    const skill = getSkillById(id);
+    if (!skill) continue;
+    state.levels.set(id, Math.max(0, Math.min(skill.max, level)));
+  }
+}
+
+function guessMainElementFromBuild(items) {
+  const pairBlock = { "ไฟ": "ดิน", "ดิน": "ไฟ", "ลม": "น้ำ", "น้ำ": "ลม" };
+  let bestMain = "";
+  let bestCost = Infinity;
+  for (const main of ELEMENTS) {
+    let sum = 0;
+    let invalid = false;
+    for (const { id, level } of items) {
+      const skill = getSkillById(id);
+      if (!skill) continue;
+      const lv = Math.max(0, Math.min(skill.max, level));
+      if (!lv) continue;
+      if (ELEMENTS.includes(skill.element) && pairBlock[main] === skill.element) {
+        invalid = true;
+        break;
+      }
+      if (ELEMENTS.includes(skill.element)) {
+        sum += skill.element === main ? skill.point : skill.point * 2;
+      } else {
+        sum += skill.point;
+      }
+      if (lv > 1) sum += (lv - 1);
+    }
+    if (!invalid && sum < bestCost) {
+      bestCost = sum;
+      bestMain = main;
+    }
+  }
+  return bestMain || state.mainElement;
+}
+
+function buildQueryStringFromState() {
+  const items = collectPickedSkills()
+    .sort((a, b) => a.skill.id.localeCompare(b.skill.id))
+    .map(({ skill, level }) => `${skill.id}:${level}`);
+  return items.join(",");
+}
+
+function syncBuildQueryToUrl() {
+  const url = new URL(window.location.href);
+  const build = buildQueryStringFromState();
+  url.searchParams.set("main", state.mainElement);
+  if (build) url.searchParams.set("build", build);
+  else url.searchParams.delete("build");
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  const curr = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next !== curr) window.history.replaceState({}, "", next);
+}
