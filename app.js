@@ -925,7 +925,12 @@ function renderSummaryTab() {
   const total = totalPoints();
   const remain = POINT_LIMIT - total;
   const picked = collectPickedSkills().sort((a, b) => a.skill.id.localeCompare(b.skill.id));
-  const merged = picked.filter(({ skill, level }) => level > 1 || skill.children.length === 0);
+  const merged = picked.filter(({ skill, level }) =>
+    level > 1
+    || skill.children.length === 0
+    || skill.id === "13008"
+    || skill.name.includes("แบ่งร่าง")
+  );
   const lines = merged.length
     ? merged.map(({ skill, level }) => {
       const iconBase = getIconBaseForSkill(skill);
