@@ -63,7 +63,7 @@ const EARTH_FIXED_GRID = {
   "10002": "p2",
   "10003": "j2",
   "10004": "r3",
-  "10005": "f3",
+  "10005": "g3",
   "10006": "t4",
   "10007": "i4",
   "10008": "e4",
@@ -83,8 +83,8 @@ const EARTH_FIXED_GRID = {
   "10026": "ad4",
   "10027": "j6",
   "10028": "af2",
-  "10029": "c3",
-  "10030": "a4",
+  "10029": "d3",
+  "10030": "b4",
   "10031": "q7",
   "10032": "d6",
   "10033": "af3",
@@ -92,18 +92,18 @@ const EARTH_FIXED_GRID = {
 };
 
 const WATER_FIXED_GRID = {
-  "11001": "k1",
+  "11001": "j1",
   "11002": "n2",
   "11003": "f2",
   "11004": "p3",
   "11005": "d3",
   "11006": "r4",
-  "11007": "l4",
+  "11007": "n4",
   "11008": "b4",
   "11009": "t5",
-  "11010": "j5",
+  "11010": "l5",
   "11011": "d5",
-  "11012": "p6",
+  "11012": "r6",
   "11013": "n6",
   "11014": "e6",
   "11015": "c6",
@@ -116,7 +116,7 @@ const WATER_FIXED_GRID = {
   "11026": "ad4",
   "11027": "d7",
   "11028": "f7",
-  "11029": "v5",
+  "11029": "v6",
   "11030": "j6",
   "11031": "af3",
   "11032": "af2",
@@ -344,6 +344,18 @@ function getLearnedTitleLine() {
     if (getLevel(s.id) > 0) return s.element;
   }
   return "";
+}
+
+function fillSkillToMax(skill) {
+  if (!skill) return false;
+  if (!canLearn(skill) && !tryAutoUnlockForClick(skill)) return false;
+  let curr = getLevel(skill.id);
+  if (curr >= skill.max) return false;
+  while (curr < skill.max && canLearn(skill)) {
+    curr += 1;
+    state.levels.set(skill.id, curr);
+  }
+  return true;
 }
 
 function canDecrease(skill) {
@@ -634,6 +646,30 @@ function scalePositionsAroundCenter(positions, scale = 1) {
   return out;
 }
 
+function scalePositionsYAroundCenter(positions, scaleY = 1) {
+  if (scaleY === 1) return positions;
+  const vals = [...positions.values()];
+  if (!vals.length) return positions;
+  const centerY = vals.reduce((sum, p) => sum + p.y, 0) / vals.length;
+  const out = new Map();
+  for (const [id, p] of positions.entries()) {
+    out.set(id, {
+      x: p.x,
+      y: centerY + (p.y - centerY) * scaleY
+    });
+  }
+  return out;
+}
+
+function shiftPositionsY(positions, deltaY = 0) {
+  if (!deltaY) return positions;
+  const out = new Map();
+  for (const [id, p] of positions.entries()) {
+    out.set(id, { x: p.x, y: p.y + deltaY });
+  }
+  return out;
+}
+
 function elementalPositions(skills, elementName, canvasW, canvasH) {
   if (skills.length && skills[0].element === "ดิน") {
     const positions = fixedGridToCanvasPositions(skills, EARTH_FIXED_GRID, canvasW, canvasH, 0.75);
@@ -739,10 +775,12 @@ function makeNode(skill, pos) {
     <img class="node-icon" src="${iconBase}/${skill.id}.png" alt="${skill.name}" />
     <div class="node-name sr-only">${skill.name}</div>
     <div class="node-lv">${lv}/${skill.max}</div>
+    <span class="node-max-btn" aria-hidden="true">MAX</span>
   `
     : `
     <div class="node-name">${skill.name}</div>
     <div class="node-lv">${lv}/${skill.max}</div>
+    <span class="node-max-btn" aria-hidden="true">MAX</span>
   `;
 
   node.addEventListener("click", () => {
@@ -757,6 +795,14 @@ function makeNode(skill, pos) {
     ev.preventDefault();
     if (!canDecrease(skill)) return;
     state.levels.set(skill.id, getLevel(skill.id) - 1);
+    refresh();
+  });
+
+  const maxBtn = node.querySelector(".node-max-btn");
+  maxBtn?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (!fillSkillToMax(skill)) return;
     refresh();
   });
 
@@ -801,6 +847,10 @@ function renderTabTree(groupName, skills) {
   if (groupName === TITLE_KEY) {
     positions = balanceTitleAxisSpacing(positions, skills);
     positions = scalePositionsAroundCenter(positions, 0.5);
+  } else {
+    // Element trees: compress vertical spacing and move upward.
+    positions = scalePositionsYAroundCenter(positions, 0.65);
+    positions = shiftPositionsY(positions, -90);
   }
 
   for (const skill of skills) {
