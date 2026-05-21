@@ -188,6 +188,26 @@ button { cursor: pointer; }
   font-size: 0.95rem;
 }
 
+.summary-skill-list {
+  margin-top: 10px;
+}
+
+.summary-skill-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.summary-skill-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex: 0 0 28px;
+}
+
 .note { color: var(--muted); font-size: 0.86rem; }
 
 .tab-bar {

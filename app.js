@@ -14,7 +14,8 @@ const TITLE_ICON_BASE = "assets/title-icons";
 
 const ELEMENTS = ["ดิน", "น้ำ", "ลม", "ไฟ"];
 const TITLE_KEY = "ฉายา";
-const TABS = [...ELEMENTS, TITLE_KEY];
+const SUMMARY_TAB = "Summary";
+const TABS = [...ELEMENTS, TITLE_KEY, SUMMARY_TAB];
 const CANVAS_W = 980;
 const CANVAS_H = 920;
 const FIRE_CANVAS_W = 980;
@@ -221,6 +222,20 @@ function moveSkillTooltip(x, y) {
 function hideSkillTooltip() {
   if (!skillTooltipEl) return;
   skillTooltipEl.classList.remove("show");
+}
+
+function getIconBaseForSkill(skill) {
+  return skill.element === "ดิน"
+    ? EARTH_ICON_BASE
+    : skill.element === "น้ำ"
+      ? WATER_ICON_BASE
+      : skill.element === "ลม"
+        ? WIND_ICON_BASE
+        : skill.element === "ไฟ"
+          ? FIRE_ICON_BASE
+          : skill.tier === "ฉายา"
+            ? TITLE_ICON_BASE
+            : null;
 }
 
 function normName(name) {
@@ -704,17 +719,7 @@ function makeNode(skill, pos) {
   node.style.left = `${pos.x}px`;
   node.style.top = `${pos.y + NODE_TOP_OFFSET}px`;
 
-  const iconBase = skill.element === "ดิน"
-    ? EARTH_ICON_BASE
-    : skill.element === "น้ำ"
-      ? WATER_ICON_BASE
-      : skill.element === "ลม"
-        ? WIND_ICON_BASE
-        : skill.element === "ไฟ"
-          ? FIRE_ICON_BASE
-          : skill.tier === "ฉายา"
-            ? TITLE_ICON_BASE
-      : null;
+  const iconBase = getIconBaseForSkill(skill);
   const useElementIcon = !!iconBase;
   node.innerHTML = useElementIcon
     ? `
@@ -829,13 +834,16 @@ function renderTabs() {
 }
 
 function renderTreeView() {
-  const skills = state.currentByGroup.get(state.activeTab) || [];
   treeView.innerHTML = "";
+  if (state.activeTab === SUMMARY_TAB) {
+    treeView.append(renderSummaryTab());
+    return;
+  }
+  const skills = state.currentByGroup.get(state.activeTab) || [];
   treeView.append(renderTabTree(state.activeTab, skills));
 }
 
-function renderSummary() {
-  const total = totalPoints();
+function collectPickedSkills() {
   const picked = [];
   for (const skills of state.currentByGroup.values()) {
     for (const s of skills) {
@@ -843,6 +851,34 @@ function renderSummary() {
       if (lv > 0) picked.push({ skill: s, level: lv });
     }
   }
+  return picked;
+}
+
+function renderSummaryTab() {
+  const card = document.createElement("section");
+  card.className = "panel";
+  card.style.padding = "14px";
+
+  const picked = collectPickedSkills().sort((a, b) => a.skill.id.localeCompare(b.skill.id));
+  const merged = picked.filter(({ skill, level }) => level > 1 || skill.children.length === 0);
+  const lines = merged.length
+    ? merged.map(({ skill, level }) => {
+      const iconBase = getIconBaseForSkill(skill);
+      const iconHtml = iconBase ? `<img class="summary-skill-icon" src="${iconBase}/${skill.id}.png" alt="${skill.name}" />` : "";
+      return `<li class="summary-skill-item">${iconHtml}<span>[${skill.element}] ${skill.name} ระดับ ${level}</span></li>`;
+    }).join("")
+    : `<li class="summary-skill-item"><span>ยังไม่มีรายการสกิลตามเงื่อนไข</span></li>`;
+
+  card.innerHTML = `
+    <h3>Summary</h3>
+    <ul class="selected-list summary-skill-list">${lines}</ul>
+  `;
+  return card;
+}
+
+function renderSummary() {
+  const total = totalPoints();
+  const picked = collectPickedSkills();
   summary.textContent = `ธาตุตัวละคร ${state.mainElement} | แต้มรวม ${total}`;
   if (summaryPanel) summaryPanel.classList.toggle("over-limit", total > POINT_LIMIT);
   selectedList.innerHTML = picked
