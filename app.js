@@ -859,6 +859,8 @@ function renderSummaryTab() {
   card.className = "panel";
   card.style.padding = "14px";
 
+  const total = totalPoints();
+  const remain = POINT_LIMIT - total;
   const picked = collectPickedSkills().sort((a, b) => a.skill.id.localeCompare(b.skill.id));
   const merged = picked.filter(({ skill, level }) => level > 1 || skill.children.length === 0);
   const lines = merged.length
@@ -871,6 +873,7 @@ function renderSummaryTab() {
 
   card.innerHTML = `
     <h3>Summary</h3>
+    <p class="note">แต้มคงเหลือ ${remain}</p>
     <ul class="selected-list summary-skill-list">${lines}</ul>
   `;
   return card;
