@@ -327,10 +327,23 @@ function buildTrees() {
 }
 
 function canLearn(skill) {
+  if (skill.tier === "ฉายา") {
+    const learnedTitleLine = getLearnedTitleLine();
+    const currentLv = getLevel(skill.id);
+    if (learnedTitleLine && learnedTitleLine !== skill.element && currentLv <= 0) return false;
+  }
   if (ELEMENTS.includes(skill.element) && isBlockedByElementRule(skill.element)) return false;
   if (!skill.pres.length) return true;
   const checks = skill.pres.map((pid) => getLevel(pid) > 0);
   return skill.rule === "OR" ? checks.some(Boolean) : checks.every(Boolean);
+}
+
+function getLearnedTitleLine() {
+  const titleSkills = state.currentByGroup.get(TITLE_KEY) || [];
+  for (const s of titleSkills) {
+    if (getLevel(s.id) > 0) return s.element;
+  }
+  return "";
 }
 
 function canDecrease(skill) {
