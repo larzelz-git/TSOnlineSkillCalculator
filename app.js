@@ -962,7 +962,7 @@ function collectPickedSkills() {
 
 function renderSummaryTab() {
   const card = document.createElement("section");
-  card.className = "panel";
+  card.className = `panel summary-panel summary-panel-${state.mainElement}`;
   card.style.padding = "14px";
 
   const total = totalPoints();
