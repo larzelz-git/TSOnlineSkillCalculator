@@ -406,7 +406,17 @@ function canDecrease(skill) {
   const lv = getLevel(skill.id);
   if (lv <= 0) return false;
   if (lv >= 2) return true;
-  return !skill.children.some((cid) => getLevel(cid) > 0);
+  return !skill.children.some((cid) => {
+    const child = getSkillById(cid);
+    if (!child || getLevel(child.id) <= 0) return false;
+    return !canKeepLearnedChildAfterDecrease(skill, child);
+  });
+}
+
+function canKeepLearnedChildAfterDecrease(skill, child) {
+  if (!child.pres.includes(skill.id)) return true;
+  if (child.rule !== "OR") return false;
+  return child.pres.some((pid) => pid !== skill.id && getLevel(pid) > 0);
 }
 
 function getSkillById(id) {
