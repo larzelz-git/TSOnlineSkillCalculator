@@ -378,8 +378,14 @@ function canLearn(skill) {
   }
   if (ELEMENTS.includes(skill.element) && isBlockedByElementRule(skill.element)) return false;
   if (!skill.pres.length) return true;
-  const checks = skill.pres.map((pid) => getLevel(pid) > 0);
+  const checks = getEffectivePrereqIds(skill).map((pid) => getLevel(pid) > 0);
   return skill.rule === "OR" ? checks.some(Boolean) : checks.every(Boolean);
+}
+
+function getEffectivePrereqIds(skill) {
+  // Earth evo1: "ม่านคุ้มกัน" by itself should not keep/enable 10020.
+  if (skill.id === "10020") return skill.pres.filter((pid) => pid !== "10010");
+  return skill.pres;
 }
 
 function getLearnedTitleLine() {
@@ -405,18 +411,25 @@ function fillSkillToMax(skill) {
 function canDecrease(skill) {
   const lv = getLevel(skill.id);
   if (lv <= 0) return false;
-  if (lv >= 2) return true;
-  return !skill.children.some((cid) => {
-    const child = getSkillById(cid);
-    if (!child || getLevel(child.id) <= 0) return false;
-    return !canKeepLearnedChildAfterDecrease(skill, child);
-  });
-}
+  const snapshot = new Map(state.levels);
+  const nextLevel = lv - 1;
+  if (nextLevel > 0) state.levels.set(skill.id, nextLevel);
+  else state.levels.delete(skill.id);
 
-function canKeepLearnedChildAfterDecrease(skill, child) {
-  if (!child.pres.includes(skill.id)) return true;
-  if (child.rule !== "OR") return false;
-  return child.pres.some((pid) => pid !== skill.id && getLevel(pid) > 0);
+  let ok = true;
+  for (const skills of state.currentByGroup.values()) {
+    for (const s of skills) {
+      if (getLevel(s.id) <= 0) continue;
+      if (!canLearn(s)) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) break;
+  }
+
+  state.levels = snapshot;
+  return ok;
 }
 
 function getSkillById(id) {
